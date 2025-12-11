@@ -17,9 +17,16 @@ const ALL_CATEGORIES = [
 export default function HomeScreen() {
   const { user, isGuest } = useAuth();
   const [showAllCategories, setShowAllCategories] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
 
-  const displayedCategories = showAllCategories ? ALL_CATEGORIES : ALL_CATEGORIES.slice(0, 3);
+  const filteredCategories = ALL_CATEGORIES.filter(cat => 
+    cat.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const displayedCategories = searchQuery 
+    ? filteredCategories 
+    : (showAllCategories ? ALL_CATEGORIES : ALL_CATEGORIES.slice(0, 3));
 
   const handleCategoryPress = (categoryId: string) => {
     // Navigate based on category
@@ -58,18 +65,27 @@ export default function HomeScreen() {
                     placeholder="Search course..." 
                     className="flex-1 ml-3 text-base text-gray-700"
                     placeholderTextColor="#9ca3af"
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
                 />
+                {searchQuery.length > 0 && (
+                    <TouchableOpacity onPress={() => setSearchQuery('')}>
+                        <Ionicons name="close-circle" size={20} color="#9ca3af" />
+                    </TouchableOpacity>
+                )}
             </View>
 
             {/* Categories */}
             <View className="mb-8">
                 <View className="flex-row justify-between items-center mb-4">
                     <Text className="text-lg font-bold text-gray-800">Categories</Text>
-                    <TouchableOpacity onPress={() => setShowAllCategories(!showAllCategories)}>
-                        <Text className="text-blue-500 font-medium">
-                            {showAllCategories ? 'Show Less' : 'View all'}
-                        </Text>
-                    </TouchableOpacity>
+                    {!searchQuery && (
+                        <TouchableOpacity onPress={() => setShowAllCategories(!showAllCategories)}>
+                            <Text className="text-blue-500 font-medium">
+                                {showAllCategories ? 'Show Less' : 'View all'}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 <View className="flex-row flex-wrap justify-between">

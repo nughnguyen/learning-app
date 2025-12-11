@@ -67,6 +67,7 @@ export default function LessonScreen() {
   const speakWord = () => {
     const word = words[currentIndex]?.word;
     if (word) {
+        Speech.stop();
         Speech.speak(word, { language: 'en', rate: 0.9 });
     }
   };
@@ -134,7 +135,7 @@ export default function LessonScreen() {
   };
 
   const startAutoPlay = () => {
-    speakWord(); 
+    // speakWord(); // Removed to avoid double speech (useEffect triggers it) 
     autoPlayRef.current = setInterval(() => {
         // Simple logic: Just trigger next
         // Logic handled in effect
