@@ -1,4 +1,4 @@
-import { View, Text, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { GRAMMAR_TENSES } from '../../../constants/grammar';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,14 +23,32 @@ export default function GrammarListScreen() {
   );
 
   return (
-    <View className="flex-1 bg-gray-50 px-5 pt-5">
-      <Stack.Screen options={{ title: 'Grammar Tenses' }} />
-      <FlatList
-        data={GRAMMAR_TENSES}
-        renderItem={renderItem}
-        keyExtractor={item => item.id}
-        contentContainerStyle={{ paddingBottom: 20 }}
-      />
+    <View className="flex-1 bg-gray-50">
+      <Stack.Screen options={{ headerShown: false }} />
+      <StatusBar barStyle="dark-content" />
+      
+      <SafeAreaView className="flex-1">
+        {/* Custom Header */}
+        <View className="px-5 pt-2 pb-4">
+            <TouchableOpacity 
+                onPress={() => router.back()}
+                className="w-10 h-10 bg-white rounded-full justify-center items-center shadow-sm border border-gray-100"
+            >
+                <Ionicons name="arrow-back" size={20} color="#4b5563" />
+            </TouchableOpacity>
+        </View>
+
+        <View className="px-5 flex-1">
+          <Text className="text-2xl font-bold text-gray-900 mb-6">Grammar Tenses</Text>
+          <FlatList
+            data={GRAMMAR_TENSES}
+            renderItem={renderItem}
+            keyExtractor={item => item.id}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
+      </SafeAreaView>
     </View>
   );
 }
