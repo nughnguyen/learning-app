@@ -32,9 +32,31 @@ export default function HomeScreen() {
 
   const handleCategoryPress = (categoryId: string) => {
     // Navigate based on category
-    if (categoryId === 'vocabulary') router.push('/vocabulary'); 
-    else if (categoryId === 'translate') router.push('/translate');
-    // ... add others
+    switch (categoryId) {
+        case 'vocabulary':
+            router.push('/vocabulary');
+            break;
+        case 'translate':
+            router.push('/translate');
+            break;
+        case 'grammar':
+            router.push('/course/grammar');
+            break;
+        case 'tense':
+             // Tense is likely part of grammar, shortcut to grammar list
+            router.push('/course/grammar');
+            break;
+        case 'course':
+            // Switch to Course Tab. Using router.push to a tab route might push on stack or switch tab depending on config.
+            // Best practice in Expo Router for tabs is usually just path /route
+            router.push('/(tabs)/course');
+            break;
+        case 'dictionary':
+            router.push('/dictionary');
+            break;
+        default:
+            console.log("Unknown category", categoryId);
+    }
   };
 
   return (

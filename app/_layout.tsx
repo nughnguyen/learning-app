@@ -38,18 +38,23 @@ const RootLayoutNav = () => {
       <Stack.Screen name="login" options={{ headerShown: false, animation: 'fade' }} />
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="vocabulary" options={{ headerShown: false }} />
+      <Stack.Screen name="translate" options={{ headerShown: false }} />
+      <Stack.Screen name="dictionary" options={{ headerShown: false }} />
     </Stack>
   );
 };
 
 import { ProgressProvider } from '../context/ProgressContext';
+import { SettingsProvider } from '../context/SettingsContext';
 
 export default function Layout() {
   return (
     <AuthProvider>
-        <ProgressProvider>
-            <RootLayoutNav />
-        </ProgressProvider>
+        <SettingsProvider>
+            <ProgressProvider>
+                <RootLayoutNav />
+            </ProgressProvider>
+        </SettingsProvider>
     </AuthProvider>
   );
 }

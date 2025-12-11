@@ -3,10 +3,12 @@ import { View, Text, ScrollView, TouchableOpacity, Alert, SafeAreaView, StatusBa
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { GRAMMAR_TENSES } from '../../../constants/grammar';
 import { Ionicons } from '@expo/vector-icons';
+import { useSettings } from '../../../context/SettingsContext';
 
 export default function GrammarLessonScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const { playSoundEffect } = useSettings();
   const tense = GRAMMAR_TENSES.find(t => t.id === id);
   const [activeTab, setActiveTab] = useState<'theory' | 'quiz'>('theory');
   const [selectedAnswers, setSelectedAnswers] = useState<{[key: number]: string}>({});
@@ -22,6 +24,15 @@ export default function GrammarLessonScreen() {
     const correctCount = tense.quiz.reduce((acc, q, idx) => {
         return acc + (selectedAnswers[idx] === q.answer ? 1 : 0);
     }, 0);
+    
+    if (correctCount === tense.quiz.length) {
+        playSoundEffect('correct');
+    } else if (correctCount > 0) {
+        playSoundEffect('correct'); // Partial success is still encouraging? Or maybe 'wrong' if < 50%? Let's just encourage.
+    } else {
+        playSoundEffect('wrong');
+    }
+
     Alert.alert("Quiz Result", `You got ${correctCount}/${tense.quiz.length} correct!`);
     setShowResults(true);
   };
