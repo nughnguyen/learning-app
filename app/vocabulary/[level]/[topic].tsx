@@ -4,6 +4,7 @@ import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
+import { useProgress } from '../../../context/ProgressContext';
 
 interface WordItem {
   word: string;
@@ -20,6 +21,7 @@ const { width } = Dimensions.get('window');
 export default function LessonScreen() {
   const { level, topic } = useLocalSearchParams();
   const router = useRouter();
+  const { updateProgress } = useProgress();
   
   // Data State
   const [words, setWords] = useState<WordItem[]>([]);
@@ -90,6 +92,7 @@ export default function LessonScreen() {
        if (!hasReviewed) {
            stopAutoPlay();
            setShowComplete(true);
+           updateProgress('vocabulary', `${level}/${topic}`);
        } else {
            // User already reviewed, maybe loop or just Toast? 
            // Let's loop for continuous study if they chose "stay"
@@ -154,6 +157,7 @@ export default function LessonScreen() {
                if (!hasReviewed) {
                    setIsAutoPlaying(false);
                    setShowComplete(true);
+                   updateProgress('vocabulary', `${level}/${topic}`);
                } else {
                    changeCard(0); // Will loop
                }

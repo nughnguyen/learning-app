@@ -42,10 +42,14 @@ const RootLayoutNav = () => {
   );
 };
 
+import { ProgressProvider } from '../context/ProgressContext';
+
 export default function Layout() {
   return (
     <AuthProvider>
-      <RootLayoutNav />
+        <ProgressProvider>
+            <RootLayoutNav />
+        </ProgressProvider>
     </AuthProvider>
   );
 }

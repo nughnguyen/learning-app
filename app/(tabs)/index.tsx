@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, Image } from 'reac
 import { useAuth } from '../../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
+import { useProgress } from '../../context/ProgressContext';
 
 // Category Data
 const ALL_CATEGORIES = [
@@ -16,6 +17,7 @@ const ALL_CATEGORIES = [
 
 export default function HomeScreen() {
   const { user, isGuest } = useAuth();
+  const { progress } = useProgress();
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
@@ -125,15 +127,23 @@ export default function HomeScreen() {
                     />
                     <View className="flex-1 ml-4 justify-around">
                         <Text className="text-base font-bold text-gray-800">Vocabulary</Text>
-                        <Text className="text-xs text-gray-500">Topics: Food, Travel</Text>
+                        <Text className="text-xs text-gray-500">
+                             {progress['vocabulary']?.completed.length || 0} Topics Completed
+                        </Text>
                         
                         <View className="mt-2">
                             <View className="flex-row justify-between mb-1">
-                                <Text className="text-xs font-bold text-blue-500">Level B1</Text>
-                                <Text className="text-xs text-gray-400">45%</Text>
+                                <Text className="text-xs font-bold text-blue-500">General</Text>
+                                <Text className="text-xs text-gray-400">
+                                    {progress['vocabulary']?.completed.length || 0} Total
+                                </Text>
                             </View>
                              <View className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <View className="w-[45%] h-full bg-blue-500 rounded-full" />
+                                {/* Visual progress: assume 20 topics is a reasonable goal for now */}
+                                <View 
+                                    className="h-full bg-blue-500 rounded-full" 
+                                    style={{ width: `${Math.min(((progress['vocabulary']?.completed.length || 0) / 20) * 100, 100)}%` }}
+                                />
                             </View>
                         </View>
                     </View>
