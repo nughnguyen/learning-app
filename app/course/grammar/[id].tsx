@@ -103,6 +103,18 @@ export default function GrammarLessonScreen() {
                         {renderParsedText(tense.formula, "text-gray-800 text-xl font-mono")}
                     </View>
 
+                    {/* Tips Guide */}
+                    {'tips' in tense && (
+                        <View className="bg-green-50 p-5 rounded-2xl border border-green-100">
+                            <Text className="text-green-800 font-bold mb-2 text-lg">Study Guide (Hướng dẫn)</Text>
+                            <View className="space-y-1">
+                                {(tense as any).tips.map((tip: string, index: number) => (
+                                    <Text key={index} className="text-gray-700 text-base leading-6">{tip}</Text>
+                                ))}
+                            </View>
+                        </View>
+                    )}
+
                     <View>
                         <Text className="text-gray-800 font-bold mb-2 text-lg">Usage</Text>
                         <Text className="text-gray-600 text-base leading-6 mb-2">{tense.usage}</Text>
