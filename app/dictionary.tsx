@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, SafeAreaView, Keyboard, Image, Dimensions } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Audio } from 'expo-av';
@@ -40,8 +41,47 @@ export default function DictionaryScreen() {
 
   // Rich Data
   const [vietnameseMeaning, setVietnameseMeaning] = useState('');
-  const [vietnameseDefinition, setVietnameseDefinition] = useState('');
+  const [vietDefinitions, setVietDefinitions] = useState<{[key: number]: string}>({});
   const [wikiImage, setWikiImage] = useState<string | null>(null);
+
+  // History State
+  const [history, setHistory] = useState<string[]>([]);
+
+  useEffect(() => {
+     loadHistory();
+  }, []);
+
+  const loadHistory = async () => {
+      try {
+          const stored = await AsyncStorage.getItem('dictionary_history');
+          if (stored) {
+              setHistory(JSON.parse(stored));
+          }
+      } catch (e) {
+          console.error("Failed to load history", e);
+      }
+  };
+
+  const addToHistory = async (word: string) => {
+      try {
+          const formattedWord = word.trim().toLowerCase();
+          const newHistory = [formattedWord, ...history.filter(w => w !== formattedWord)].slice(0, 20);
+          setHistory(newHistory);
+          await AsyncStorage.setItem('dictionary_history', JSON.stringify(newHistory));
+      } catch (e) {
+          console.error("Failed to save history", e);
+      }
+  };
+
+  const removeFromHistory = async (word: string) => {
+      try {
+          const newHistory = history.filter(w => w !== word);
+          setHistory(newHistory);
+          await AsyncStorage.setItem('dictionary_history', JSON.stringify(newHistory));
+      } catch (e) {
+          console.error("Failed to remove history item", e);
+      }
+  };
 
   const searchWord = async (word: string) => {
       setSearchQuery(word);
@@ -57,7 +97,7 @@ export default function DictionaryScreen() {
     setError('');
     setResult(null);
     setVietnameseMeaning('');
-    setVietnameseDefinition('');
+    setVietDefinitions({});
     setWikiImage(null);
 
     try {
@@ -68,6 +108,7 @@ export default function DictionaryScreen() {
       if (Array.isArray(dataDict) && dataDict.length > 0) {
         const entry = dataDict[0];
         setResult(entry);
+        addToHistory(entry.word); // Add to history on success
 
         // 2. Fetch Vietnamese Meaning (Word Translation)
         fetch(`https://api.mymemory.translated.net/get?q=${entry.word}&langpair=en|vi`)
@@ -77,16 +118,30 @@ export default function DictionaryScreen() {
             })
             .catch(e => console.log("Trans Err", e));
 
-         // 3. Fetch Vietnamese Definition (Translate the first definition)
-         if (entry.meanings.length > 0 && entry.meanings[0].definitions.length > 0) {
-             const firstDef = entry.meanings[0].definitions[0].definition;
-             fetch(`https://api.mymemory.translated.net/get?q=${firstDef}&langpair=en|vi`)
-                .then(r => r.json())
-                .then(d => {
-                    if(d.responseData) setVietnameseDefinition(d.responseData.translatedText);
-                })
-                .catch(e => console.log("Def Trans Err", e));
-         }
+         // 3. Fetch Vietnamese Definitions for each part of speech
+         const defPromises = entry.meanings.map(async (meaning: Meaning, index: number) => {
+             if (meaning.definitions.length > 0) {
+                 const firstDef = meaning.definitions[0].definition;
+                 try {
+                    const r = await fetch(`https://api.mymemory.translated.net/get?q=${firstDef}&langpair=en|vi`);
+                    const d = await r.json();
+                    if (d.responseData) {
+                        return { index, text: d.responseData.translatedText };
+                    }
+                 } catch (e) {
+                     console.log(`Def Trans Err for idx ${index}`, e);
+                 }
+             }
+             return null;
+         });
+
+         Promise.all(defPromises).then(results => {
+             const newDefs: {[key: number]: string} = {};
+             results.forEach(res => {
+                 if (res) newDefs[res.index] = res.text;
+             });
+             setVietDefinitions(newDefs);
+         });
 
          // 4. Fetch Wikipedia Image
          fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${entry.word}&prop=pageimages&format=json&pithumbsize=600&origin=*`)
@@ -121,6 +176,15 @@ export default function DictionaryScreen() {
     }
   };
 
+  const handleClearSearch = () => {
+      setSearchQuery('');
+      setResult(null);
+      setError('');
+      setVietnameseMeaning('');
+      setVietDefinitions({});
+      setWikiImage(null);
+  };
+
   return (
     <View className="flex-1 bg-gray-50">
       <SafeAreaView className="flex-1">
@@ -149,7 +213,7 @@ export default function DictionaryScreen() {
                     returnKeyType="search"
                 />
                 {searchQuery.length > 0 ? (
-                    <TouchableOpacity onPress={() => setSearchQuery('')} className="p-1 bg-gray-300 rounded-full">
+                    <TouchableOpacity onPress={handleClearSearch} className="p-1 bg-gray-300 rounded-full">
                          <Ionicons name="close" size={16} color="#4b5563" />
                     </TouchableOpacity>
                 ) : (
@@ -219,12 +283,12 @@ export default function DictionaryScreen() {
                                         </Text>
                                     </View>
 
-                                    {/* Vietnamese Definition (First one only) */}
-                                    {index === 0 && idx === 0 && vietnameseDefinition ? (
-                                        <View className="ml-4 mt-1 mb-1">
-                                             <Text className="text-gray-500 italic text-sm">VN: {vietnameseDefinition}</Text>
+                                    {/* Vietnamese Definition (First one only for each part of speech section) */}
+                                    {idx === 0 && vietDefinitions[index] && (
+                                        <View className="ml-4 mt-1 mb-1 bg-green-50 px-2 py-1 rounded items-start self-start">
+                                             <Text className="text-green-700 font-bold text-xs italic">VN: {vietDefinitions[index]}</Text>
                                         </View>
-                                    ) : null}
+                                    )}
 
                                     {def.example && (
                                         <View className="ml-4 mt-2 pl-3 border-l-2 border-gray-200 py-1">
@@ -295,11 +359,42 @@ export default function DictionaryScreen() {
                     )}
                 </View>
             ) : (
-                <View className="mt-20 items-center opacity-50">
-                     <View className="bg-gray-100 p-8 rounded-full mb-6">
-                        <Ionicons name="search" size={60} color="#d1d5db" />
-                     </View>
-                    <Text className="text-gray-400 font-medium text-lg">Type a word to start</Text>
+                <View>
+                    {history.length > 0 ? (
+                        <View>
+                             <View className="flex-row justify-between items-center mb-4">
+                                <Text className="text-lg font-bold text-gray-800">Recent Searches</Text>
+                                <TouchableOpacity onPress={() => {
+                                    setHistory([]);
+                                    AsyncStorage.removeItem('dictionary_history');
+                                }}>
+                                    <Text className="text-xs font-bold text-red-500">Clear All</Text>
+                                </TouchableOpacity>
+                             </View>
+                             {history.map((item, index) => (
+                                 <TouchableOpacity 
+                                    key={index}
+                                    onPress={() => searchWord(item)}
+                                    className="flex-row items-center bg-white p-4 rounded-xl mb-3 shadow-sm border border-gray-100"
+                                 >
+                                     <View className="bg-gray-100 p-2 rounded-lg mr-3">
+                                         <Ionicons name="time-outline" size={18} color="#6b7280" />
+                                     </View>
+                                     <Text className="flex-1 text-base font-medium text-gray-700 capitalize">{item}</Text>
+                                     <TouchableOpacity onPress={() => removeFromHistory(item)} className="p-2">
+                                         <Ionicons name="close-circle-outline" size={20} color="#d1d5db" />
+                                     </TouchableOpacity>
+                                 </TouchableOpacity>
+                             ))}
+                        </View>
+                    ) : (
+                        <View className="mt-20 items-center opacity-50">
+                            <View className="bg-gray-100 p-8 rounded-full mb-6">
+                                <Ionicons name="search" size={60} color="#d1d5db" />
+                            </View>
+                            <Text className="text-gray-400 font-medium text-lg">Type a word to start</Text>
+                        </View>
+                    )}
                 </View>
             )}
         </ScrollView>
