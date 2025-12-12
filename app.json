@@ -22,7 +22,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.nughnguyen.GumballZLearning",
+      "package": "com.nughnguyen.gumballzlearning.app",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
