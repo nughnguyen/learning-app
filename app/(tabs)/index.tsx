@@ -1,10 +1,18 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Image, BackHandler, ToastAndroid, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, BackHandler, ToastAndroid, Platform, Animated, Dimensions } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
-import { Link, useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useProgress } from '../../context/ProgressContext';
 import { GRAMMAR_TENSES } from '../../constants/grammar';
+
+// Screen Dimensions for layout calculations
+const { width } = Dimensions.get('window');
+// Standardizing on 16px (px-4) padding and 16px Gap to ensure perfect 3-column alignment without peeking
+const CONTAINER_PADDING = 32; // px-4 * 2 = 16 * 2 = 32
+const GAP = 16; 
+// Calculate exact width to fit 3 items fully: (Available Width - 2 Gaps) / 3
+const ITEM_WIDTH = (width - CONTAINER_PADDING - (GAP * 2)) / 3;
 
 // Category Data
 const ALL_CATEGORIES = [
@@ -22,6 +30,11 @@ export default function HomeScreen() {
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
+
+  // Scroll and Dynamic Color Logic
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const [categoriesY, setCategoriesY] = useState(0);
+  const [recentY, setRecentY] = useState(0);
 
   // Double back press to exit logic
   const [backPressedOnce, setBackPressedOnce] = useState(false);
@@ -58,10 +71,9 @@ export default function HomeScreen() {
 
   const displayedCategories = searchQuery 
     ? filteredCategories 
-    : (showAllCategories ? ALL_CATEGORIES : ALL_CATEGORIES.slice(0, 3));
+    : ALL_CATEGORIES;
 
   const handleCategoryPress = (categoryId: string) => {
-    // Navigate based on category
     switch (categoryId) {
         case 'vocabulary':
             router.push('/vocabulary');
@@ -73,12 +85,9 @@ export default function HomeScreen() {
             router.push('/course/grammar');
             break;
         case 'tense':
-             // Tense is likely part of grammar, shortcut to grammar list
             router.push('/course/grammar');
             break;
         case 'course':
-            // Switch to Course Tab. Using router.push to a tab route might push on stack or switch tab depending on config.
-            // Best practice in Expo Router for tabs is usually just path /route
             router.push('/(tabs)/course');
             break;
         case 'dictionary':
@@ -89,151 +98,211 @@ export default function HomeScreen() {
     }
   };
 
+  // Helper to interpolate color based on Y position
+  const getDynamicTextColor = (elementY: number) => {
+    if (elementY === 0) return '#1e293b'; // Default slate-800
+    
+    // Blue background adjusted height is 215.
+    const startChange = Math.max(0, elementY - 205);
+    const endChange = Math.max(0, elementY - 155);
+
+    return scrollY.interpolate({
+        inputRange: [startChange, endChange],
+        outputRange: ['#1e293b', '#ffffff'], // slate-800 to white
+        extrapolate: 'clamp',
+    });
+  };
+
   return (
-    <View className="flex-1 bg-gray-50 pt-12">
-        <ScrollView className="px-5" showsVerticalScrollIndicator={false}>
-            {/* Header */}
-            <View className="flex-row justify-between items-center mb-6">
+    <View className="flex-1 bg-[#F4F6F8]">
+        {/* Modern Clean Header Background - Moved up more (h-215) */}
+        <View className="absolute top-0 left-0 right-0 h-[215px] bg-blue-600 rounded-b-[40px]" />
+
+        <Animated.ScrollView 
+            className="flex-1" 
+            showsVerticalScrollIndicator={false} 
+            contentContainerStyle={{ paddingTop: 60, paddingBottom: 100 }}
+            onScroll={Animated.event(
+                [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                { useNativeDriver: false }
+            )}
+            scrollEventThrottle={16}
+        >
+            {/* Header Section */}
+            <View className="px-4 mb-6 flex-row justify-between items-start">
                 <View>
-                    <Text className="text-gray-500 text-base font-medium">Hello,</Text>
-                    <Text className="text-2xl font-bold text-gray-800">
+                    <Text className="text-blue-100 text-lg font-medium mb-1">Good Morning,</Text>
+                    <Text className="text-2xl font-extrabold text-white tracking-tight">
                         {user ? user.name : 'Guest'}
                     </Text>
-                    <Text className="text-blue-500 font-medium">Have fun studying!</Text>
+                    <Text className="text-blue-200 text-xs mt-1">Let's learn something new today!</Text>
                 </View>
-                <View className="w-12 h-12 bg-gray-200 rounded-full overflow-hidden border-2 border-white shadow-sm">
-                    {user?.avatar ? (
-                        <Image source={{ uri: user.avatar }} className="w-full h-full" />
-                    ) : (
-                        <View className="w-full h-full justify-center items-center bg-blue-100">
-                             <Ionicons name="person" size={20} color="#2563eb" />
-                        </View>
+                <TouchableOpacity className="w-10 h-10 bg-white/20 rounded-full border-2 border-white/40 p-0.5 shadow-lg">
+                     <View className="w-full h-full bg-white rounded-full overflow-hidden justify-center items-center">
+                        {user?.avatar ? (
+                            <Image source={{ uri: user.avatar }} className="w-full h-full" />
+                        ) : (
+                            <Ionicons name="person" size={18} color="#2563eb" />
+                        )}
+                     </View>
+                </TouchableOpacity>
+            </View>
+
+            {/* Compact Search Bar */}
+            <View className="px-4 mb-6">
+                <View className="flex-row items-center bg-white rounded-full px-5 py-3 shadow-lg shadow-blue-900/10">
+                    <Ionicons name="search-outline" size={20} color="#94a3b8" />
+                    <TextInput 
+                        placeholder="Search for courses..." 
+                        className="flex-1 ml-2 text-sm text-slate-700 font-medium"
+                        placeholderTextColor="#94a3b8"
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                    />
+                    {searchQuery.length > 0 && (
+                        <TouchableOpacity onPress={() => setSearchQuery('')}>
+                            <Ionicons name="close-circle" size={18} color="#cbd5e1" />
+                        </TouchableOpacity>
                     )}
                 </View>
             </View>
 
-            {/* Search Bar */}
-            <View className="flex-row items-center bg-white rounded-2xl px-4 py-3 mb-8 shadow-sm border border-gray-100">
-                <Ionicons name="search" size={24} color="#9ca3af" />
-                <TextInput 
-                    placeholder="Search course..." 
-                    className="flex-1 ml-3 text-base text-gray-700"
-                    placeholderTextColor="#9ca3af"
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                />
-                {searchQuery.length > 0 && (
-                    <TouchableOpacity onPress={() => setSearchQuery('')}>
-                        <Ionicons name="close-circle" size={20} color="#9ca3af" />
-                    </TouchableOpacity>
-                )}
-            </View>
-
-            {/* Categories */}
-            <View className="mb-8">
-                <View className="flex-row justify-between items-center mb-4">
-                    <Text className="text-lg font-bold text-gray-800">Categories</Text>
+            {/* Categories Section */}
+            <View 
+                className="mb-6"
+                onLayout={(event) => setCategoriesY(event.nativeEvent.layout.y)}
+            >
+                <View className="px-4 flex-row justify-between items-center mb-4">
+                    <Animated.Text 
+                        style={{ color: getDynamicTextColor(categoriesY) }}
+                        className="text-lg font-bold tracking-tight"
+                    >
+                        Browse Categories
+                    </Animated.Text>
                     {!searchQuery && (
-                        <TouchableOpacity onPress={() => setShowAllCategories(!showAllCategories)}>
-                            <Text className="text-blue-500 font-medium">
-                                {showAllCategories ? 'Show Less' : 'View all'}
+                        <TouchableOpacity 
+                            onPress={() => setShowAllCategories(!showAllCategories)} 
+                            className="bg-blue-50 px-3 py-1.5 rounded-full"
+                        >
+                            <Text className="text-blue-600 font-bold text-xs">
+                                {showAllCategories ? 'Collapse' : 'View All'}
                             </Text>
                         </TouchableOpacity>
                     )}
                 </View>
 
-                <View className="flex-row flex-wrap justify-between">
-                    {displayedCategories.map((cat) => (
-                        <TouchableOpacity 
-                            key={cat.id}
-                            className="bg-white p-4 rounded-2xl w-[31%] mb-4 items-center shadow-sm border border-gray-50"
-                            onPress={() => handleCategoryPress(cat.id)}
-                        >
-                            <View className="w-12 h-12 bg-blue-50 rounded-full justify-center items-center mb-2">
-                                <Ionicons name={cat.icon as any} size={24} color="#2563eb" />
-                            </View>
-                            <Text className="text-xs font-medium text-gray-700 text-center">{cat.name}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-                
-                {/* Horizontal Scroll Hint if expanded? Or strictly grid as per mockup? */}
-                 {showAllCategories && (
-                    <Text className="text-xs text-gray-400 text-center mt-[-10px] mb-4">
-                        Swipe left to see more (if implemented as scroll)
-                    </Text>
-                 )}
+                {searchQuery || showAllCategories ? (
+                    <View className="px-4 flex-row flex-wrap">
+                         {displayedCategories.map((cat, index) => (
+                            <TouchableOpacity 
+                                key={cat.id}
+                                style={{ 
+                                    width: ITEM_WIDTH, 
+                                    marginRight: (index + 1) % 3 === 0 ? 0 : GAP 
+                                }}
+                                className="bg-white p-3 rounded-3xl mb-4 items-center shadow-sm border border-slate-50 py-4"
+                                onPress={() => handleCategoryPress(cat.id)}
+                            >
+                                <View className={`w-12 h-12 rounded-2xl justify-center items-center mb-2 ${cat.id === 'grammar' ? 'bg-orange-50' : 'bg-blue-50'}`}>
+                                    <Ionicons name={cat.icon as any} size={24} color={cat.id === 'grammar' ? '#f97316' : '#2563eb'} />
+                                </View>
+                                <Text className="text-xs font-bold text-slate-700 text-center" numberOfLines={1}>{cat.name}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                ) : (
+                    <Animated.ScrollView 
+                        horizontal 
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingHorizontal: 16 }}
+                        className="flex-row"
+                    >
+                        {displayedCategories.map((cat, index) => (
+                            <TouchableOpacity 
+                                key={cat.id}
+                                style={{ width: ITEM_WIDTH, marginRight: index === displayedCategories.length - 1 ? 0 : GAP }}
+                                className={`bg-white rounded-3xl items-center shadow-sm border border-slate-50 py-4`}
+                                onPress={() => handleCategoryPress(cat.id)}
+                            >
+                                <View className={`w-12 h-12 rounded-2xl justify-center items-center mb-2 ${cat.id === 'grammar' ? 'bg-orange-50' : 'bg-blue-50'}`}>
+                                    <Ionicons name={cat.icon as any} size={24} color={cat.id === 'grammar' ? '#f97316' : '#2563eb'} />
+                                </View>
+                                <Text className="text-xs font-bold text-slate-600 text-center" numberOfLines={1}>{cat.name}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </Animated.ScrollView>
+                )}
             </View>
 
-            {/* Current Learning Progress */}
-            <View className="mb-24">
-                <View className="flex-row justify-between items-center mb-4">
-                    <Text className="text-lg font-bold text-gray-800">Current Progress</Text>
-                </View>
-
-                {/* Progress Card Example: Vocabulary */}
-                <TouchableOpacity className="bg-white rounded-3xl p-5 mb-4 shadow-sm border border-gray-100 flex-row">
-                    <Image 
-                        source={{ uri: 'https://img.freepik.com/free-vector/english-teacher-concept-illustration_114360-7478.jpg' }} // Placeholder
-                        className="w-20 h-20 rounded-xl bg-gray-200" 
-                    />
-                    <View className="flex-1 ml-4 justify-around">
-                        <Text className="text-base font-bold text-gray-800">Vocabulary</Text>
-                        <Text className="text-xs text-gray-500">
-                             {progress['vocabulary']?.completed.length || 0} Topics Completed
-                        </Text>
-                        
-                        <View className="mt-2">
-                            <View className="flex-row justify-between mb-1">
-                                <Text className="text-xs font-bold text-blue-500">General</Text>
-                                <Text className="text-xs text-gray-400">
-                                    {progress['vocabulary']?.completed.length || 0} Total
-                                </Text>
-                            </View>
-                             <View className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                                {/* Visual progress: assume 20 topics is a reasonable goal for now */}
-                                <View 
-                                    className="h-full bg-blue-500 rounded-full" 
-                                    style={{ width: `${Math.min(((progress['vocabulary']?.completed.length || 0) / 20) * 100, 100)}%` }}
-                                />
-                            </View>
+            {/* Continue Learning Section */}
+            <View 
+                className="px-4"
+                onLayout={(event) => setRecentY(event.nativeEvent.layout.y)}
+            >
+                <Animated.Text 
+                    style={{ color: getDynamicTextColor(recentY) }}
+                    className="text-lg font-bold mb-4 tracking-tight"
+                >
+                    Recent Progress
+                </Animated.Text>
+                
+                {/* Vocabulary Card */}
+                <TouchableOpacity className="bg-white rounded-[24px] p-5 mb-4 shadow-sm border border-slate-100 flex-row items-center">
+                    <View className="w-16 h-16 rounded-2xl bg-slate-100 overflow-hidden">
+                        <Image 
+                            source={{ uri: 'https://img.freepik.com/free-vector/english-teacher-concept-illustration_114360-7478.jpg' }} 
+                            className="w-full h-full" 
+                        />
+                    </View>
+                    <View className="flex-1 ml-4 justify-center">
+                        <View className="flex-row justify-between items-center mb-2">
+                             <Text className="text-base font-bold text-slate-800">Vocabulary</Text>
+                             <Text className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg">
+                                {Math.round(((progress['vocabulary']?.completed.length || 0) / 20) * 100)}%
+                             </Text>
                         </View>
+                        
+                        <View className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mb-1">
+                            <View 
+                                className="h-full bg-blue-500 rounded-full" 
+                                style={{ width: `${Math.min(((progress['vocabulary']?.completed.length || 0) / 20) * 100, 100)}%` }}
+                            />
+                        </View>
+                        <Text className="text-[10px] text-slate-400 font-medium mt-1">
+                            {progress['vocabulary']?.completed.length || 0} / 20 Lessons Completed
+                        </Text>
                     </View>
                 </TouchableOpacity>
 
-                {/* Progress Card Example: Grammar */}
+                {/* Grammar Card */}
                 <TouchableOpacity 
-                    className="bg-white rounded-3xl p-5 mb-4 shadow-sm border border-gray-100 flex-row"
+                    className="bg-white rounded-[24px] p-5 mb-4 shadow-sm border border-slate-100 flex-row items-center"
                     onPress={() => router.push('/course/grammar')}
                 >
-                    <View className="w-20 h-20 rounded-xl bg-orange-100 justify-center items-center">
-                         <Ionicons name="text-outline" size={32} color="#f97316" />
+                    <View className="w-16 h-16 rounded-2xl bg-orange-50 justify-center items-center">
+                         <Ionicons name="text-outline" size={28} color="#f97316" />
                     </View>
-                    <View className="flex-1 ml-4 justify-around">
-                        <Text className="text-base font-bold text-gray-800">Grammar</Text>
-                        <Text className="text-xs text-gray-500">
-                            {progress['grammar']?.completed.length || 0} Lessons Completed
-                        </Text>
-                        
-                        <View className="mt-2">
-                            <View className="flex-row justify-between mb-1">
-                                <Text className="text-xs font-bold text-orange-500">Overall</Text>
-                                <Text className="text-xs text-gray-400">
-                                    {Math.round(((progress['grammar']?.completed.length || 0) / GRAMMAR_TENSES.length) * 100)}%
-                                </Text>
-                            </View>
-                             <View className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <View 
-                                    className="h-full bg-orange-500 rounded-full" 
-                                    style={{ width: `${Math.min(((progress['grammar']?.completed.length || 0) / GRAMMAR_TENSES.length) * 100, 100)}%` }}
-                                />
-                            </View>
+                    <View className="flex-1 ml-4 justify-center">
+                        <View className="flex-row justify-between items-center mb-2">
+                             <Text className="text-base font-bold text-slate-800">Grammar</Text>
+                             <Text className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-lg">
+                                {Math.round(((progress['grammar']?.completed.length || 0) / GRAMMAR_TENSES.length) * 100)}%
+                             </Text>
                         </View>
+
+                         <View className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mb-1">
+                            <View 
+                                className="h-full bg-orange-500 rounded-full" 
+                                style={{ width: `${Math.min(((progress['grammar']?.completed.length || 0) / GRAMMAR_TENSES.length) * 100, 100)}%` }}
+                            />
+                        </View>
+                        <Text className="text-[10px] text-slate-400 font-medium mt-1">
+                            {progress['grammar']?.completed.length || 0} / {GRAMMAR_TENSES.length} Lessons Completed
+                        </Text>
                     </View>
                 </TouchableOpacity>
-
             </View>
-        </ScrollView>
+        </Animated.ScrollView>
     </View>
   );
 }
