@@ -37,6 +37,28 @@ export default function GrammarLessonScreen() {
     setShowResults(true);
   };
 
+  const renderParsedText = (text: string, baseStyle: string = '') => {
+      const parts = text.split(/(<(?:S|V|O|Aux|K)>[\s\S]*?<\/(?:S|V|O|Aux|K)>)/g);
+      return (
+          <Text className={baseStyle}>
+              {parts.map((part, index) => {
+                  if (part.startsWith('<S>')) {
+                      return <Text key={index} className="text-blue-600 font-bold">{part.replace(/<\/?S>/g, '')}</Text>;
+                  } else if (part.startsWith('<V>')) {
+                      return <Text key={index} className="text-red-500 font-bold">{part.replace(/<\/?V>/g, '')}</Text>;
+                  } else if (part.startsWith('<O>')) {
+                      return <Text key={index} className="text-green-600 font-bold">{part.replace(/<\/?O>/g, '')}</Text>;
+                  } else if (part.startsWith('<Aux>')) {
+                      return <Text key={index} className="text-purple-600 font-bold">{part.replace(/<\/?Aux>/g, '')}</Text>;
+                  } else if (part.startsWith('<K>')) {
+                      return <Text key={index} className="font-bold underline decoration-yellow-500 decoration-2">{part.replace(/<\/?K>/g, '')}</Text>;
+                  }
+                  return <Text key={index}>{part}</Text>;
+              })}
+          </Text>
+      );
+  };
+
   return (
     <View className="flex-1 bg-white">
       <Stack.Screen options={{ headerShown: false }} />
@@ -78,17 +100,37 @@ export default function GrammarLessonScreen() {
                 <View className="space-y-6 pb-10">
                     <View className="bg-blue-50 p-5 rounded-2xl">
                         <Text className="text-blue-800 font-bold mb-2 text-lg">Formula</Text>
-                        <Text className="text-gray-800 text-xl font-mono">{tense.formula}</Text>
+                        {renderParsedText(tense.formula, "text-gray-800 text-xl font-mono")}
                     </View>
 
                     <View>
                         <Text className="text-gray-800 font-bold mb-2 text-lg">Usage</Text>
-                        <Text className="text-gray-600 text-base leading-6">{tense.usage}</Text>
+                        <Text className="text-gray-600 text-base leading-6 mb-2">{tense.usage}</Text>
+                        {/* TypeScript safety check: display usageVi if it exists, though we just added it */}
+                        {'usageVi' in tense && (
+                             <Text className="text-blue-700 text-base leading-6 italic mb-4">{(tense as any).usageVi}</Text>
+                        )}
+                        
+                        {'keywords' in tense && (
+                            <View className="bg-yellow-50 p-4 rounded-xl border border-yellow-100">
+                                <Text className="text-yellow-800 font-bold mb-1">Signals (Dấu hiệu nhận biết):</Text>
+                                <Text className="text-gray-700">{(tense as any).keywords}</Text>
+                            </View>
+                        )}
                     </View>
 
                     <View className="bg-orange-50 p-5 rounded-2xl">
                         <Text className="text-orange-800 font-bold mb-2 text-lg">Example</Text>
-                        <Text className="text-gray-800 text-base italic">"{tense.example}"</Text>
+                        <View className="space-y-2">
+                            {tense.example.split(' / ').map((ex, idx) => (
+                                <View key={idx} className="flex-row items-start">
+                                    <Text className="text-orange-800 font-bold mr-2 mt-0.5">{idx + 1}.</Text>
+                                    <View className="flex-1">
+                                        {renderParsedText(ex, "text-gray-800 text-base italic")}
+                                    </View>
+                                </View>
+                            ))}
+                        </View>
                     </View>
                 </View>
             ) : (

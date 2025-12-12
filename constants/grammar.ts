@@ -2,9 +2,11 @@ export const GRAMMAR_TENSES = [
   {
     id: 'present_simple',
     title: 'Present Simple',
-    formula: 'S + V(s/es) + O',
-    usage: 'To describe habits, routines, general truths, and fixed schedules. Keywords: always, usually, active, every day, etc.',
-    example: 'I wake up at 6 AM every day. / The sun rises in the east. / The train leaves at 9 PM.',
+    formula: '<S>S</S> + <V>V(s/es)</V> + <O>O</O>',
+    usage: 'To describe habits, routines, general truths, and fixed schedules.',
+    usageVi: 'Diễn tả thói quen, hành động lặp đi lặp lại, sự thật hiển nhiên hoặc lịch trình cố định.',
+    keywords: 'always, usually, often, sometimes, every day, every week, etc.',
+    example: '<S>I</S> <V>wake up</V> <O>at 6 AM</O> <K>every day</K>. / <S>The sun</S> <V>rises</V> <O>in the east</O>. / <S>The train</S> <V>leaves</V> <O>at 9 PM</O>.',
     quiz: [
       {
         question: 'She ___ (play) tennis every Sunday.',
@@ -61,9 +63,11 @@ export const GRAMMAR_TENSES = [
   {
     id: 'present_continuous',
     title: 'Present Continuous',
-    formula: 'S + am/is/are + V-ing',
-    usage: 'To describe actions happening now, temporary situations, or future arrangements. Keywords: now, at the moment, look, listen.',
-    example: 'She is reading a book right now. / I am meeting him tonight.',
+    formula: '<S>S</S> + <Aux>am/is/are</Aux> + <V>V-ing</V> + <O>O</O>',
+    usage: 'To describe actions happening now, temporary situations, or future arrangements.',
+    usageVi: 'Diễn tả hành động đang xảy ra ngay lúc nói, xung quanh thời điểm nói hoặc kế hoạch tương lai gần.',
+    keywords: 'now, at the moment, right now, Look!, Listen!, etc.',
+    example: '<S>She</S> <Aux>is</Aux> <V>reading</V> <O>a book</O> <K>right now</K>. / <S>I</S> <Aux>am</Aux> <V>meeting</V> <O>him</O> <K>tonight</K>.',
     quiz: [
       {
         question: 'Look! It ___ (rain).',
@@ -120,9 +124,11 @@ export const GRAMMAR_TENSES = [
   {
     id: 'present_perfect',
     title: 'Present Perfect',
-    formula: 'S + have/has + V3/ed',
-    usage: 'To describe actions that started in the past and continue to the present, experiences, or recent events with present results. Keywords: for, since, just, already, yet, ever, never.',
-    example: 'I have visited Paris twice. / She has lived here for 10 years.',
+    formula: '<S>S</S> + <Aux>have/has</Aux> + <V>V3/ed</V> + <O>O</O>',
+    usage: 'To describe actions that started in the past and continue to the present, experiences, or recent events with present results.',
+    usageVi: 'Diễn tả hành động bắt đầu trong quá khứ và kéo dài đến hiện tại, trải nghiệm hoặc hành động vừa xảy ra.',
+    keywords: 'for, since, just, already, yet, ever, never, recently, lately.',
+    example: '<S>I</S> <Aux>have</Aux> <V>visited</V> <O>Paris</O> <K>twice</K>. / <S>She</S> <Aux>has</Aux> <V>lived</V> <O>here</O> <K>for 10 years</K>.',
     quiz: [
       {
         question: 'I ___ (live) here for 10 years.',
@@ -179,9 +185,11 @@ export const GRAMMAR_TENSES = [
   {
     id: 'past_simple',
     title: 'Past Simple',
-    formula: 'S + V2/ed + O',
-    usage: 'To describe finished actions at a specific time in the past. Keywords: yesterday, last week, in 2010, ago.',
-    example: 'He bought a car yesterday. / We went to the cinema last night.',
+    formula: '<S>S</S> + <V>V2/ed</V> + <O>O</O>',
+    usage: 'To describe finished actions at a specific time in the past.',
+    usageVi: 'Diễn tả hành động đã xảy ra và kết thúc hoàn toàn tại một thời điểm xác định trong quá khứ.',
+    keywords: 'yesterday, last night/week/month/year, ago, in 2010, etc.',
+    example: '<S>He</S> <V>bought</V> <O>a car</O> <K>yesterday</K>. / <S>We</S> <V>went</V> <O>to the cinema</O> <K>last night</K>.',
     quiz: [
       {
         question: 'They ___ (go) to the cinema last night.',
@@ -239,9 +247,11 @@ export const GRAMMAR_TENSES = [
    {
     id: 'future_simple',
     title: 'Future Simple',
-    formula: 'S + will + V',
-    usage: 'To describe decisions made at the moment of speaking, predictions, promises, or offers. Keywords: tomorrow, next week, soon.',
-    example: 'I will help you. / I think it will rain tomorrow.',
+    formula: '<S>S</S> + <Aux>will</Aux> + <V>V</V> + <O>O</O>',
+    usage: 'To describe decisions made at the moment of speaking, predictions, promises, or offers.',
+    usageVi: 'Diễn tả quyết định ngay tại thời điểm nói, dự đoán (không có căn cứ), lời hứa hoặc lời đề nghị.',
+    keywords: 'tomorrow, next week/month/year, soon, in + time, think, believe, promise.',
+    example: '<S>I</S> <Aux>will</Aux> <V>help</V> <O>you</O>. / I think <S>it</S> <Aux>will</Aux> <V>rain</V> <K>tomorrow</K>.',
     quiz: [
       {
         question: 'I think it ___ (rain) tomorrow.',
