@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useCallback, useRef } from 'react';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Image, BackHandler, ToastAndroid, Platform } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
-import { Link, useRouter } from 'expo-router';
+import { Link, useRouter, useFocusEffect } from 'expo-router';
 import { useProgress } from '../../context/ProgressContext';
+import { GRAMMAR_TENSES } from '../../constants/grammar';
 
 // Category Data
 const ALL_CATEGORIES = [
@@ -21,6 +22,35 @@ export default function HomeScreen() {
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
+
+  // Double back press to exit logic
+  const [backPressedOnce, setBackPressedOnce] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        if (backPressedOnce) {
+          BackHandler.exitApp();
+          return true;
+        }
+
+        setBackPressedOnce(true);
+        if (Platform.OS === 'android') {
+          ToastAndroid.show('Press back again to exit', ToastAndroid.SHORT);
+        }
+        
+        setTimeout(() => {
+          setBackPressedOnce(false);
+        }, 2000);
+        
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => subscription.remove();
+    }, [backPressedOnce])
+  );
 
   const filteredCategories = ALL_CATEGORIES.filter(cat => 
     cat.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -171,22 +201,32 @@ export default function HomeScreen() {
                     </View>
                 </TouchableOpacity>
 
-                 {/* Progress Card Example: Grammar */}
-                 <TouchableOpacity className="bg-white rounded-3xl p-5 mb-4 shadow-sm border border-gray-100 flex-row">
+                {/* Progress Card Example: Grammar */}
+                <TouchableOpacity 
+                    className="bg-white rounded-3xl p-5 mb-4 shadow-sm border border-gray-100 flex-row"
+                    onPress={() => router.push('/course/grammar')}
+                >
                     <View className="w-20 h-20 rounded-xl bg-orange-100 justify-center items-center">
                          <Ionicons name="text-outline" size={32} color="#f97316" />
                     </View>
                     <View className="flex-1 ml-4 justify-around">
                         <Text className="text-base font-bold text-gray-800">Grammar</Text>
-                        <Text className="text-xs text-gray-500">12 Tenses</Text>
+                        <Text className="text-xs text-gray-500">
+                            {progress['grammar']?.completed.length || 0} Lessons Completed
+                        </Text>
                         
                         <View className="mt-2">
                             <View className="flex-row justify-between mb-1">
-                                <Text className="text-xs font-bold text-orange-500">Basic</Text>
-                                <Text className="text-xs text-gray-400">80%</Text>
+                                <Text className="text-xs font-bold text-orange-500">Overall</Text>
+                                <Text className="text-xs text-gray-400">
+                                    {Math.round(((progress['grammar']?.completed.length || 0) / GRAMMAR_TENSES.length) * 100)}%
+                                </Text>
                             </View>
                              <View className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <View className="w-[80%] h-full bg-orange-500 rounded-full" />
+                                <View 
+                                    className="h-full bg-orange-500 rounded-full" 
+                                    style={{ width: `${Math.min(((progress['grammar']?.completed.length || 0) / GRAMMAR_TENSES.length) * 100, 100)}%` }}
+                                />
                             </View>
                         </View>
                     </View>
