@@ -41,7 +41,7 @@ export default function DictionaryScreen() {
 
   // Rich Data
   const [vietnameseMeaning, setVietnameseMeaning] = useState('');
-  const [vietnameseDefinition, setVietnameseDefinition] = useState('');
+  const [vietDefinitions, setVietDefinitions] = useState<{[key: number]: string}>({});
   const [wikiImage, setWikiImage] = useState<string | null>(null);
 
   // History State
@@ -97,7 +97,7 @@ export default function DictionaryScreen() {
     setError('');
     setResult(null);
     setVietnameseMeaning('');
-    setVietnameseDefinition('');
+    setVietDefinitions({});
     setWikiImage(null);
 
     try {
@@ -118,16 +118,30 @@ export default function DictionaryScreen() {
             })
             .catch(e => console.log("Trans Err", e));
 
-         // 3. Fetch Vietnamese Definition (Translate the first definition)
-         if (entry.meanings.length > 0 && entry.meanings[0].definitions.length > 0) {
-             const firstDef = entry.meanings[0].definitions[0].definition;
-             fetch(`https://api.mymemory.translated.net/get?q=${firstDef}&langpair=en|vi`)
-                .then(r => r.json())
-                .then(d => {
-                    if(d.responseData) setVietnameseDefinition(d.responseData.translatedText);
-                })
-                .catch(e => console.log("Def Trans Err", e));
-         }
+         // 3. Fetch Vietnamese Definitions for each part of speech
+         const defPromises = entry.meanings.map(async (meaning: Meaning, index: number) => {
+             if (meaning.definitions.length > 0) {
+                 const firstDef = meaning.definitions[0].definition;
+                 try {
+                    const r = await fetch(`https://api.mymemory.translated.net/get?q=${firstDef}&langpair=en|vi`);
+                    const d = await r.json();
+                    if (d.responseData) {
+                        return { index, text: d.responseData.translatedText };
+                    }
+                 } catch (e) {
+                     console.log(`Def Trans Err for idx ${index}`, e);
+                 }
+             }
+             return null;
+         });
+
+         Promise.all(defPromises).then(results => {
+             const newDefs: {[key: number]: string} = {};
+             results.forEach(res => {
+                 if (res) newDefs[res.index] = res.text;
+             });
+             setVietDefinitions(newDefs);
+         });
 
          // 4. Fetch Wikipedia Image
          fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${entry.word}&prop=pageimages&format=json&pithumbsize=600&origin=*`)
@@ -167,7 +181,7 @@ export default function DictionaryScreen() {
       setResult(null);
       setError('');
       setVietnameseMeaning('');
-      setVietnameseDefinition('');
+      setVietDefinitions({});
       setWikiImage(null);
   };
 
@@ -269,12 +283,12 @@ export default function DictionaryScreen() {
                                         </Text>
                                     </View>
 
-                                    {/* Vietnamese Definition (First one only) */}
-                                    {index === 0 && idx === 0 && vietnameseDefinition ? (
-                                        <View className="ml-4 mt-1 mb-1">
-                                             <Text className="text-gray-500 italic text-sm">VN: {vietnameseDefinition}</Text>
+                                    {/* Vietnamese Definition (First one only for each part of speech section) */}
+                                    {idx === 0 && vietDefinitions[index] && (
+                                        <View className="ml-4 mt-1 mb-1 bg-green-50 px-2 py-1 rounded items-start self-start">
+                                             <Text className="text-green-700 font-bold text-xs italic">VN: {vietDefinitions[index]}</Text>
                                         </View>
-                                    ) : null}
+                                    )}
 
                                     {def.example && (
                                         <View className="ml-4 mt-2 pl-3 border-l-2 border-gray-200 py-1">
