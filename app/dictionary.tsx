@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, SafeAreaView, Keyboard, Image, Dimensions } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Audio } from 'expo-av';
@@ -43,6 +44,45 @@ export default function DictionaryScreen() {
   const [vietnameseDefinition, setVietnameseDefinition] = useState('');
   const [wikiImage, setWikiImage] = useState<string | null>(null);
 
+  // History State
+  const [history, setHistory] = useState<string[]>([]);
+
+  useEffect(() => {
+     loadHistory();
+  }, []);
+
+  const loadHistory = async () => {
+      try {
+          const stored = await AsyncStorage.getItem('dictionary_history');
+          if (stored) {
+              setHistory(JSON.parse(stored));
+          }
+      } catch (e) {
+          console.error("Failed to load history", e);
+      }
+  };
+
+  const addToHistory = async (word: string) => {
+      try {
+          const formattedWord = word.trim().toLowerCase();
+          const newHistory = [formattedWord, ...history.filter(w => w !== formattedWord)].slice(0, 20);
+          setHistory(newHistory);
+          await AsyncStorage.setItem('dictionary_history', JSON.stringify(newHistory));
+      } catch (e) {
+          console.error("Failed to save history", e);
+      }
+  };
+
+  const removeFromHistory = async (word: string) => {
+      try {
+          const newHistory = history.filter(w => w !== word);
+          setHistory(newHistory);
+          await AsyncStorage.setItem('dictionary_history', JSON.stringify(newHistory));
+      } catch (e) {
+          console.error("Failed to remove history item", e);
+      }
+  };
+
   const searchWord = async (word: string) => {
       setSearchQuery(word);
       handleSearch(word);
@@ -68,6 +108,7 @@ export default function DictionaryScreen() {
       if (Array.isArray(dataDict) && dataDict.length > 0) {
         const entry = dataDict[0];
         setResult(entry);
+        addToHistory(entry.word); // Add to history on success
 
         // 2. Fetch Vietnamese Meaning (Word Translation)
         fetch(`https://api.mymemory.translated.net/get?q=${entry.word}&langpair=en|vi`)
@@ -121,6 +162,15 @@ export default function DictionaryScreen() {
     }
   };
 
+  const handleClearSearch = () => {
+      setSearchQuery('');
+      setResult(null);
+      setError('');
+      setVietnameseMeaning('');
+      setVietnameseDefinition('');
+      setWikiImage(null);
+  };
+
   return (
     <View className="flex-1 bg-gray-50">
       <SafeAreaView className="flex-1">
@@ -149,7 +199,7 @@ export default function DictionaryScreen() {
                     returnKeyType="search"
                 />
                 {searchQuery.length > 0 ? (
-                    <TouchableOpacity onPress={() => setSearchQuery('')} className="p-1 bg-gray-300 rounded-full">
+                    <TouchableOpacity onPress={handleClearSearch} className="p-1 bg-gray-300 rounded-full">
                          <Ionicons name="close" size={16} color="#4b5563" />
                     </TouchableOpacity>
                 ) : (
@@ -295,11 +345,42 @@ export default function DictionaryScreen() {
                     )}
                 </View>
             ) : (
-                <View className="mt-20 items-center opacity-50">
-                     <View className="bg-gray-100 p-8 rounded-full mb-6">
-                        <Ionicons name="search" size={60} color="#d1d5db" />
-                     </View>
-                    <Text className="text-gray-400 font-medium text-lg">Type a word to start</Text>
+                <View>
+                    {history.length > 0 ? (
+                        <View>
+                             <View className="flex-row justify-between items-center mb-4">
+                                <Text className="text-lg font-bold text-gray-800">Recent Searches</Text>
+                                <TouchableOpacity onPress={() => {
+                                    setHistory([]);
+                                    AsyncStorage.removeItem('dictionary_history');
+                                }}>
+                                    <Text className="text-xs font-bold text-red-500">Clear All</Text>
+                                </TouchableOpacity>
+                             </View>
+                             {history.map((item, index) => (
+                                 <TouchableOpacity 
+                                    key={index}
+                                    onPress={() => searchWord(item)}
+                                    className="flex-row items-center bg-white p-4 rounded-xl mb-3 shadow-sm border border-gray-100"
+                                 >
+                                     <View className="bg-gray-100 p-2 rounded-lg mr-3">
+                                         <Ionicons name="time-outline" size={18} color="#6b7280" />
+                                     </View>
+                                     <Text className="flex-1 text-base font-medium text-gray-700 capitalize">{item}</Text>
+                                     <TouchableOpacity onPress={() => removeFromHistory(item)} className="p-2">
+                                         <Ionicons name="close-circle-outline" size={20} color="#d1d5db" />
+                                     </TouchableOpacity>
+                                 </TouchableOpacity>
+                             ))}
+                        </View>
+                    ) : (
+                        <View className="mt-20 items-center opacity-50">
+                            <View className="bg-gray-100 p-8 rounded-full mb-6">
+                                <Ionicons name="search" size={60} color="#d1d5db" />
+                            </View>
+                            <Text className="text-gray-400 font-medium text-lg">Type a word to start</Text>
+                        </View>
+                    )}
                 </View>
             )}
         </ScrollView>
