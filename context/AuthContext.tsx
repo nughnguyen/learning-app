@@ -37,6 +37,7 @@ interface AuthContextType {
   registerWithEmail: (email: string, pass: string, name: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   loginWithFacebook: () => Promise<void>;
+  updateUserProfile: (name: string, avatar: string | null) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -50,6 +51,7 @@ const AuthContext = createContext<AuthContextType>({
   registerWithEmail: async () => {},
   loginWithGoogle: async () => {},
   loginWithFacebook: async () => {},
+  updateUserProfile: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -176,11 +178,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await AsyncStorage.multiRemove(['user', 'isGuest']);
   };
 
+  const updateUserProfile = async (name: string, avatar: string | null) => {
+    // Update local state immediately for UI responsiveness
+    setUser(prev => prev ? { ...prev, name, avatar } : null);
+    
+    // Also update AsyncStorage if we are in local flow fallback (unlikely if using Firebase but safe to do)
+    if (!auth.currentUser) {
+        const currentUserStr = await AsyncStorage.getItem('user');
+        if (currentUserStr) {
+            const currentUser = JSON.parse(currentUserStr);
+            const updated = { ...currentUser, name, avatar };
+            await AsyncStorage.setItem('user', JSON.stringify(updated));
+        }
+    } else {
+        // If firebase, the auth.currentUser needs reload to see changes usually, 
+        // but we assume the caller has already called updateProfile on firebase auth.
+        // We just ensure local state is in sync.
+        await auth.currentUser.reload();
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
         user, isGuest, isLoading, 
         login, guestLogin, logout,
-        loginWithEmail, registerWithEmail, loginWithGoogle, loginWithFacebook
+        loginWithEmail, registerWithEmail, loginWithGoogle, loginWithFacebook,
+        updateUserProfile
     }}>
       {children}
     </AuthContext.Provider>

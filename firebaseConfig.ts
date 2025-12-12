@@ -27,3 +27,5 @@ export const auth = Platform.OS === 'web'
   : initializeAuth(app, {
       persistence: getReactNativePersistence(ReactNativeAsyncStorage)
     });
+import { getStorage } from "firebase/storage";
+export const storage = getStorage(app);

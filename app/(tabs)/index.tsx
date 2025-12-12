@@ -147,7 +147,10 @@ export default function HomeScreen() {
                     </Text>
                     <Text className="text-blue-200 text-xs mt-1">Let's learn something new today!</Text>
                 </View>
-                <TouchableOpacity className="w-10 h-10 bg-white/20 rounded-full border-2 border-white/40 p-0.5 shadow-lg">
+                <TouchableOpacity 
+                    className="w-10 h-10 bg-white/20 rounded-full border-2 border-white/40 p-0.5 shadow-lg"
+                    onPress={() => router.push('/(tabs)/profile')}
+                >
                      <View className="w-full h-full bg-white rounded-full overflow-hidden justify-center items-center">
                         {user?.avatar ? (
                             <Image source={{ uri: user.avatar }} className="w-full h-full" />
