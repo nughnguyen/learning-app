@@ -98,13 +98,23 @@ export default function HomeScreen() {
     }
   };
 
+  // Helper to get time-based greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return 'Good Morning,';
+    if (hour >= 12 && hour < 17) return 'Good Afternoon,';
+    if (hour >= 17 && hour < 22) return 'Good Evening,';
+    return "Don't work too hard,";
+  };
+  const greeting = getGreeting();
+
   // Helper to interpolate color based on Y position
   const getDynamicTextColor = (elementY: number) => {
     if (elementY === 0) return '#1e293b'; // Default slate-800
     
-    // Blue background adjusted height is 215.
-    const startChange = Math.max(0, elementY - 205);
-    const endChange = Math.max(0, elementY - 155);
+    // Blue background adjusted height is 180 (cuts through half of search bar).
+    const startChange = Math.max(0, elementY - 170);
+    const endChange = Math.max(0, elementY - 120);
 
     return scrollY.interpolate({
         inputRange: [startChange, endChange],
@@ -115,8 +125,8 @@ export default function HomeScreen() {
 
   return (
     <View className="flex-1 bg-[#F4F6F8]">
-        {/* Modern Clean Header Background - Moved up more (h-215) */}
-        <View className="absolute top-0 left-0 right-0 h-[215px] bg-blue-600 rounded-b-[40px]" />
+        {/* Modern Clean Header Background - Height reduced to 180px to cut search bar */}
+        <View className="absolute top-0 left-0 right-0 h-[180px] bg-blue-600 rounded-b-[40px]" />
 
         <Animated.ScrollView 
             className="flex-1" 
@@ -131,7 +141,7 @@ export default function HomeScreen() {
             {/* Header Section */}
             <View className="px-4 mb-6 flex-row justify-between items-start">
                 <View>
-                    <Text className="text-blue-100 text-lg font-medium mb-1">Good Morning,</Text>
+                    <Text className="text-blue-100 text-lg font-medium mb-1">{greeting}</Text>
                     <Text className="text-2xl font-extrabold text-white tracking-tight">
                         {user ? user.name : 'Guest'}
                     </Text>
